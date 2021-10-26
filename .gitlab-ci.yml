@@ -1,0 +1,128 @@
+---
+# We create a pipeline
+stages:
+  - preflight
+  - test
+  - build
+  - push
+#  - notify
+
+variables:
+  CI_REGISTRY_URL: registry-test
+  CI_REGISTRY_USER: CI
+  REGISTRY_IMG_TAG: ${CI_REGISTRY_URL}.${COMPANY_DOMAIN}/pleal/docker-molecule_debian11:latest
+  DOCKERHUB_USER: lotusnoir
+  DOCKERHUB_TAG: ${DOCKERHUB_USER}/ansible_molecule_test_images:debian11
+
+##################################################
+# PREFLIGHT
+##################################################
+yamllint:
+  stage: preflight
+  image: sdesbure/yamllint
+  before_script:
+    - yamllint --version
+  script:
+    - yamllint .
+
+hadolint:
+  stage: preflight
+  image: hadolint/hadolint:latest-debian
+  before_script:
+    - hadolint --version
+  script:
+    - hadolint Dockerfile
+
+##################################################
+# TEST BUILD
+##################################################
+test_build:
+  stage: test
+  image: docker:latest
+  needs: ["yamllint", "hadolint"]
+  services:
+    - docker:dind
+  script:
+    - docker build -t test-build .
+    - docker run --name test-build-container --rm test-build systemctl --version
+
+#pytest:
+#  stage: test
+#  script:
+#    - pytest --junitxml=report.xml
+#  artifacts:
+#    when: always
+#    reports:
+#      junit: report.xml
+
+##################################################
+# BUILD AND PUSH IMAGES
+##################################################
+build_for_gitlab:
+  stage: build
+  image: docker:latest
+  needs: ["test_build"]
+  services:
+    - docker:dind
+  before_script:
+    - docker info
+    - echo "${CI_REGISTRY_USER} ${CI_REGISTRY_TOKEN} ${CI_REGISTRY_URL}.${COMPANY_DOMAIN}"
+    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_TOKEN}" "${CI_REGISTRY_URL}.${COMPANY_DOMAIN}"
+  script:
+    - docker build -t "${REGISTRY_IMG_TAG}" .
+    - docker push "${REGISTRY_IMG_TAG}"
+
+build_for_dockerhub:
+  stage: build
+  image: docker:latest
+  needs: ["test_build"]
+  services:
+    - docker:dind
+  before_script:
+    - docker info
+    - docker login -u "${DOCKERHUB_USER}" -p "${DOCKERHUB_TOKEN}"
+  script:
+    - docker build -t "${DOCKERHUB_TAG}" .
+    - docker push "${DOCKERHUB_TAG}"
+
+##################################################
+# PUSH ON GITHUB
+##################################################
+push_on_github:
+  stage: push
+  image: alpine:latest
+  needs: ["build_for_gitlab", "build_for_dockerhub"]
+  before_script:
+    - apk add git openssh-client
+    - eval $(ssh-agent -s)
+    - echo "${GITHUB_LOTUSNOIR_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo -e "Host *\n\tUser ansible\n\tStrictHostKeyChecking no\n\tForwardAgent yes\n\n" > ~/.ssh/config
+    - git config --global user.email "lotus.noir@gmail.com"
+    - git config --global user.name "lotusnoir"
+    - git config --global init.defaultBranch main
+  script:
+    - git clone git@github.com:lotusnoir/docker-molecule_debian11.git /tmp/docker-molecule_debian11
+    - rm -rf .git
+    - cp -r . /tmp/docker-molecule_debian11/
+    - cd /tmp/docker-molecule_debian11
+    - git add -A
+    - git commit -m "adding features" || echo "No changes, nothing to commit!"
+    - git push
+
+##################################################
+# NOTIFY
+##################################################
+#notify:
+#  stage: notify
+#  image: alpine:latest
+#  before_script:
+#    - apk add curl
+#  script:
+#    - |
+#      curl -X POST "https://$GOTIFY_HOST/message?token=$GOTIFY_TOKEN" \
+#           -F "title=CI Build Complete" \
+#           -F "message=Scheduled CI build for Ansible is complete."
+#  tags:
+#    - docker
