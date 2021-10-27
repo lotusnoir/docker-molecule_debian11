@@ -1,17 +1,17 @@
 ---
-# We create a pipeline
 stages:
   - preflight
   - test
   - push
-#  - notify
 
 variables:
   CI_REGISTRY_URL: registry-test
   CI_REGISTRY_USER: CI
-  REGISTRY_IMG_TAG: ${CI_REGISTRY_URL}.${COMPANY_DOMAIN}/pleal/docker-molecule_debian11:latest
-  DOCKERHUB_USER: lotusnoir
+  REGISTRY_IMG_TAG: ${CI_REGISTRY_URL}.${COMPANY_DOMAIN}/${GITLAB_USER}/docker-molecule_debian11:latest
   DOCKERHUB_TAG: ${DOCKERHUB_USER}/ansible_molecule_test_images:debian11
+  DOCKERHUB_USER: lotusnoir
+  GITHUB_USER: lotusnoir
+
 
 ##################################################
 # PREFLIGHT
@@ -32,6 +32,7 @@ hadolint:
   script:
     - hadolint Dockerfile
 
+
 ##################################################
 # TEST BUILD
 ##################################################
@@ -45,14 +46,6 @@ test_build:
     - docker build -t test-build .
     - docker run --name test-build-container --rm test-build systemctl --version
 
-#pytest:
-#  stage: test
-#  script:
-#    - pytest --junitxml=report.xml
-#  artifacts:
-#    when: always
-#    reports:
-#      junit: report.xml
 
 ##################################################
 # PUSH CODE AND IMAGE
@@ -91,34 +84,18 @@ push_src_on_github:
   before_script:
     - apk add git openssh-client
     - eval $(ssh-agent -s)
-    - echo "${GITHUB_LOTUSNOIR_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
+    - echo "${GITHUB_USER_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     - echo -e "Host *\n\tUser ansible\n\tStrictHostKeyChecking no\n\tForwardAgent yes\n\n" > ~/.ssh/config
-    - git config --global user.email "lotus.noir@gmail.com"
-    - git config --global user.name "lotusnoir"
+    - git config --global user.email "${GITHUB_USER_EMAIL}"
+    - git config --global user.name "${GITHUB_USER}"
     - git config --global init.defaultBranch main
   script:
-    - git clone git@github.com:lotusnoir/docker-molecule_debian11.git /tmp/docker-molecule_debian11
+    - git clone git@github.com:${GITHUB_USER}/docker-molecule_debian11.git /tmp/docker-molecule_debian11
     - rm -rf .git
     - cp -r . /tmp/docker-molecule_debian11/
     - cd /tmp/docker-molecule_debian11
     - git add -A
     - git commit -m "adding features" || echo "No changes, nothing to commit!"
     - git push
-
-##################################################
-# NOTIFY
-##################################################
-#notify:
-#  stage: notify
-#  image: alpine:latest
-#  before_script:
-#    - apk add curl
-#  script:
-#    - |
-#      curl -X POST "https://$GOTIFY_HOST/message?token=$GOTIFY_TOKEN" \
-#           -F "title=CI Build Complete" \
-#           -F "message=Scheduled CI build for Ansible is complete."
-#  tags:
-#    - docker
