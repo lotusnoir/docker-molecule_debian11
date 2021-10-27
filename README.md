@@ -5,16 +5,14 @@ This repo was created in order to test ansible roles with molecule.
 
 ## Build it locally
 
-- With docker command
-
   docker build - < Dockerfile_$VERSION
 
-- From docker hub
+## Use it from dockerhub
 
     https://hub.docker.com/repository/docker/lotusnoir/ansible_molecule_test_images:debian11
 
-## Build it on gitlab registry
 
+This repo was build from a gitlab repo first in order to be build in CI/CD
 To build this image and have it available on your company gitlab registry for the CI/CD builds, you need to follow this steps:
 
 On gitlab > Settings > repository > deploy token

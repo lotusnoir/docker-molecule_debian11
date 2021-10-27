@@ -3,7 +3,6 @@
 stages:
   - preflight
   - test
-  - build
   - push
 #  - notify
 
@@ -56,10 +55,10 @@ test_build:
 #      junit: report.xml
 
 ##################################################
-# BUILD AND PUSH IMAGES
+# PUSH CODE AND IMAGE
 ##################################################
-build_for_gitlab:
-  stage: build
+push_img_on_gitlab:
+  stage: push
   image: docker:latest
   needs: ["test_build"]
   services:
@@ -72,8 +71,8 @@ build_for_gitlab:
     - docker build -t "${REGISTRY_IMG_TAG}" .
     - docker push "${REGISTRY_IMG_TAG}"
 
-build_for_dockerhub:
-  stage: build
+push_img_on_dockerhub:
+  stage: push
   image: docker:latest
   needs: ["test_build"]
   services:
@@ -85,13 +84,10 @@ build_for_dockerhub:
     - docker build -t "${DOCKERHUB_TAG}" .
     - docker push "${DOCKERHUB_TAG}"
 
-##################################################
-# PUSH ON GITHUB
-##################################################
-push_on_github:
+push_src_on_github:
   stage: push
   image: alpine:latest
-  needs: ["build_for_gitlab", "build_for_dockerhub"]
+  needs: ["test_build"]
   before_script:
     - apk add git openssh-client
     - eval $(ssh-agent -s)
