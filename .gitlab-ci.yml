@@ -44,7 +44,10 @@ test_build:
     - docker:dind
   script:
     - docker build -t test-build .
-    - docker run --name test-build-container --rm test-build systemctl --version
+    - docker stop test-container && docker rm test-container
+    - docker run -d --name=test-container --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro test-build
+    - docker exec test-container systemctl --version
+    - docker stop test-container && docker rm test-container
 
 
 ##################################################
