@@ -1,0 +1,7 @@
+---
+adminer_src_url: 'https://github.com/vrana/adminer/releases/download/v{{ adminer_version }}/adminer-{{ adminer_version }}.php'
+adminer_packages:
+  - ca-certificates
+  - php-fpm
+  - php-mysql
+  - php-pgsql

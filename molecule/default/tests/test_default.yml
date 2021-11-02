@@ -1,0 +1,7 @@
+---
+file:
+  /var/www/adminer/index.php:
+    exists: true
+    mode: "0766"
+    owner: www-data
+    group: www-data
