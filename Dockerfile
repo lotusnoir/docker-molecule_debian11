@@ -19,5 +19,5 @@ RUN apt-get update \
     /lib/systemd/system/sysinit.target.wants/systemd-tmpfiles-setup* \
     /lib/systemd/system/systemd-update-utmp*
 
-VOLUME [ "/sys/fs/cgroup" ]
+VOLUME [ "/sys/fs/cgroup", "/tmp" ]
 ENTRYPOINT ["/lib/systemd/systemd"]
