@@ -6,7 +6,7 @@ ENV LC_ALL=C
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get -y upgrade \
-    && apt-get install -y --no-install-recommends locales systemd systemd-sysv sudo python3 python3-apt python3-pip iproute2 net-tools procps wget ca-certificates curl vim \
+    && apt-get install -y --no-install-recommends git locales systemd systemd-sysv sudo python3 python3-apt python3-pip iproute2 net-tools procps wget ca-certificates curl vim \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc /usr/share/man \
     && apt-get clean
 
