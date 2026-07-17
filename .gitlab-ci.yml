@@ -11,6 +11,8 @@ variables:
   DOCKERHUB_TAG: ${DOCKERHUB_USER}/ansible_molecule_test_images:${OS_TYPE}
   DOCKERHUB_USER: lotusnoir
   GITHUB_USER: lotusnoir
+  DOCKER_HOST: unix:///var/run/docker.sock
+  DOCKER_TLS_CERTDIR: "" # Disable TLS for simplicity
 
 ##################################################
 # TEST BUILD
@@ -23,6 +25,7 @@ test_build:
       changes:
         - Dockerfile
   script:
+    - until docker info 2>/dev/null; do echo "Waiting for Docker..."; sleep 2; done
     - docker build -t test-build-${OS_TYPE} .
     - docker stop test-${OS_TYPE} || true && docker rm test-${OS_TYPE} || true
     - docker run -d --name=test-${OS_TYPE} --cgroupns=host --volume=/sys/fs/cgroup:/sys/fs/cgroup:rw test-build-${OS_TYPE}
@@ -47,13 +50,13 @@ test_build:
 push_img_on_dockerhub:
   stage: push
   image: docker:latest
+  needs: ["test_build"]
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       changes:
         - Dockerfile
-  needs: ["test_build"]
   before_script:
-    - docker info
+    - until docker info 2>/dev/null; do echo "Waiting for Docker..."; sleep 2; done
     - docker login -u "${DOCKERHUB_USER}" -p "${DOCKERHUB_TOKEN}"
   script:
     - docker build -t "${DOCKERHUB_TAG}" .
@@ -62,11 +65,11 @@ push_img_on_dockerhub:
 push_src_on_github:
   stage: push
   image: alpine:latest
+  needs: ["test_build"]
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       changes:
         - Dockerfile
-  needs: ["test_build"]
   before_script:
     - apk add git openssh-client
     - eval $(ssh-agent -s)

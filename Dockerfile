@@ -1,4 +1,4 @@
-FROM debian:11
+FROM debian:11.11
 LABEL maintainer="lotusnoir"
 
 ENV container=docker
