@@ -1,4 +1,12 @@
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-added-large-files
+
   # Versioning: Commit Messages & Changelog
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v4.12.1
@@ -12,7 +20,7 @@ repos:
     rev: v2.14.0
     hooks:
       - id: hadolint-docker
-        args: ["Dockerfile"]
+        files: (^|/)Dockerfile$
 
   # Lint: YAML
   - repo: https://github.com/adrienverge/yamllint.git
