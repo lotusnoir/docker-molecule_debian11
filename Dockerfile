@@ -5,6 +5,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ENV container=docker
 ENV DEBIAN_FRONTEND=noninteractive
+STOPSIGNAL SIGRTMIN+3
 
 # Bullseye is EOL: use the archive for main + updates.
 # NOTE: debian-security for bullseye is not yet published on archive.debian.org
@@ -48,4 +49,4 @@ RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
     /lib/systemd/system/systemd-update-utmp*
 
 VOLUME [ "/tmp", "/run", "/run/lock" ]
-ENTRYPOINT ["/lib/systemd/systemd"]
+ENTRYPOINT ["/lib/systemd/systemd", "log-level=info"]
